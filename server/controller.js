@@ -3,7 +3,7 @@ import { spawn } from "node:child_process";
 let isUnlocking = false;
 let lastUnlockTime = 0;
 
-const UNLOCK_DURATION_MS = 2000; // 對應 --hold-period 1000ms
+const UNLOCK_DURATION_MS = 8000; // 對應 --hold-period 8000ms
 const COOLDOWN_MS = 0; // 如果你想要全域冷卻時間
 
 export async function unlockDoor({ userId, source }) {
