@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } from 'discord.js';
+import { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, EmbedBuilder } from 'discord.js';
 import { getAllowedRoles } from './database.js';
 import { unlockDoor } from './controller.js';
 import { logAccess } from './database.js';
@@ -81,8 +81,19 @@ async function handleCommand(interaction) {
       console.warn('Could not clean up old messages:', error);
     }
 
+    const embed = new EmbedBuilder()
+      .setColor('#5865F2')
+      .setTitle('🔐 EC029 Door Access')
+      .setDescription('Click the button below to unlock the door.')
+      .addFields(
+        { name: '⏱️ Duration', value: '8 seconds', inline: true },
+        { name: '🔒 Security', value: 'Role-based access', inline: true }
+      )
+      .setFooter({ text: 'Requires appropriate permissions' })
+      .setTimestamp();
+
     await interaction.reply({
-      content: '🔐 **EC029 Door Access**\nClick the button below to unlock the door. You need appropriate permissions to use this.\n',
+      embeds: [embed],
       components: [row]
     });
   }
@@ -97,8 +108,17 @@ async function handleButton(interaction) {
       const hasAccess = await checkUserAccess(interaction.user.id, interaction.guild.id);
 
       if (!hasAccess) {
+        const errorEmbed = new EmbedBuilder()
+          .setColor('#ED4245')
+          .setTitle('❌ Access Denied')
+          .setDescription('You do not have permission to unlock the door.')
+          .addFields(
+            { name: '💡 Need Access?', value: 'Contact an administrator to get the required role.' }
+          )
+          .setTimestamp();
+
         return await interaction.editReply({
-          content: '❌ You do not have permission to unlock the door.',
+          embeds: [errorEmbed]
         });
       }
 
@@ -112,14 +132,34 @@ async function handleButton(interaction) {
         'discord'
       );
 
+      const successEmbed = new EmbedBuilder()
+        .setColor('#57F287')
+        .setTitle('✅ Door Unlocked')
+        .setDescription('The door has been successfully unlocked!')
+        .addFields(
+          { name: '⏱️ Auto-lock', value: `${(result.duration || 8000) / 1000} seconds`, inline: true },
+          { name: '👤 Unlocked by', value: interaction.user.username, inline: true }
+        )
+        .setTimestamp();
+
       await interaction.editReply({
-        content: `✅ Door unlocked! It will automatically lock again in ${(result.duration || 8000) / 1000} seconds.`,
+        embeds: [successEmbed]
       });
 
     } catch (error) {
       console.error('Error handling unlock button:', error);
+      
+      const errorEmbed = new EmbedBuilder()
+        .setColor('#ED4245')
+        .setTitle('❌ Error')
+        .setDescription('An error occurred while unlocking the door.')
+        .addFields(
+          { name: '🔧 Troubleshooting', value: 'Please try again or contact support if the issue persists.' }
+        )
+        .setTimestamp();
+
       await interaction.editReply({
-        content: '❌ An error occurred while unlocking the door.',
+        embeds: [errorEmbed]
       });
     }
   }
