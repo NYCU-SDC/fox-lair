@@ -1,7 +1,7 @@
 import { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } from 'discord.js';
-import { getAllowedRoles } from '../db/database.js';
-import { unlockDoor } from '../gpio/controller.js';
-import { logAccess } from '../db/database.js';
+import { getAllowedRoles } from './database.js';
+import { unlockDoor } from './controller.js';
+import { logAccess } from './database.js';
 
 let bot;
 

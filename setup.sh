@@ -4,7 +4,7 @@
 
 set -e
 
-echo "🚪 EC029 Gate - Setup Script"
+echo "🚪 Fox Lair - Setup Script"
 echo "================================"
 echo ""
 

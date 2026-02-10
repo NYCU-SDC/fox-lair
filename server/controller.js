@@ -1,7 +1,7 @@
 import { Gpio } from 'onoff';
 
 const RELAY_PIN = parseInt(process.env.RELAY_GPIO_PIN || '17');
-const UNLOCK_DURATION = 8000; // 8 seconds
+const UNLOCK_DURATION = 8000;
 
 let relay;
 let unlockTimer = null;
@@ -9,7 +9,7 @@ let unlockTimer = null;
 export function initGPIO() {
   try {
     relay = new Gpio(RELAY_PIN, 'out');
-    relay.writeSync(0); // Ensure door is locked on startup
+    relay.writeSync(0);
     console.log(`GPIO initialized on pin ${RELAY_PIN}`);
   } catch (error) {
     console.warn('GPIO not available (probably not running on Raspberry Pi):', error.message);

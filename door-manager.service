@@ -1,5 +1,5 @@
 [Unit]
-Description=EC029 Door Manager
+Description=Fox Lair Control System
 After=network.target
 
 [Service]

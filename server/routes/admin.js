@@ -7,8 +7,8 @@ import {
   addAllowedUser,
   removeAllowedUser,
   getAllowedUsers
-} from '../db/database.js';
-import { getBot } from '../discord/bot.js';
+} from '../database.js';
+import { getBot } from '../bot.js';
 
 const router = express.Router();
 

@@ -1,7 +1,7 @@
 {
-  "name": "door-mananger",
+  "name": "fox-lair",
   "version": "1.0.0",
-  "description": "EC029 Gate - Door Access Control System",
+  "description": "Fox Lair Control System",
   "type": "module",
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
@@ -24,7 +24,6 @@
   "dependencies": {
     "axios": "^1.7.9",
     "better-sqlite3": "^11.8.1",
-    "cors": "^2.8.5",
     "discord.js": "^14.17.3",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",

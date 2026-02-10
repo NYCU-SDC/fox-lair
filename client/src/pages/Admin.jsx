@@ -11,7 +11,7 @@ function Admin({ user, isAdmin, onLogout }) {
     <div className="admin-container">
       <header className="admin-header">
         <div className="header-content">
-          <h1>🚪 EC029 Gate</h1>
+          <h1>Fox Lair</h1>
           <div className="header-user">
             <div className="user-info">
               <span className="user-name">{user.username}</span>

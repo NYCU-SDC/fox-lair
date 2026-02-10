@@ -41,8 +41,8 @@ function Login({ onLogin }) {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <h1>🚪 EC029 Gate</h1>
-          <p>Door Access Control System</p>
+          <h1>Fox Lair</h1>
+          <p>Control System</p>
         </div>
 
         <div className="login-methods">

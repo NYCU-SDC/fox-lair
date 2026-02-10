@@ -1,6 +1,6 @@
 import express from 'express';
 import axios from 'axios';
-import { addAllowedUser } from '../db/database.js';
+import { addAllowedUser } from '../database.js';
 
 const router = express.Router();
 
@@ -19,7 +19,7 @@ router.get('/discord/callback', async (req, res) => {
   const { code } = req.query;
 
   if (!code) {
-    return res.redirect(`${process.env.CLIENT_URL}?error=no_code`);
+    return res.redirect(`/?error=no_code`);
   }
 
   try {
@@ -64,10 +64,10 @@ router.get('/discord/callback', async (req, res) => {
     const adminUserIds = (process.env.ADMIN_USER_IDS || '').split(',');
     req.session.isAdmin = adminUserIds.includes(user.id);
 
-    res.redirect(process.env.CLIENT_URL);
+    res.redirect("/");
   } catch (error) {
     console.error('Discord OAuth error:', error.response?.data || error.message);
-    res.redirect(`${process.env.CLIENT_URL}?error=oauth_failed`);
+    res.redirect(`/?error=oauth_failed`);
   }
 });
 

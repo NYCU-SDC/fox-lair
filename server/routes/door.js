@@ -1,7 +1,7 @@
 import express from 'express';
-import { unlockDoor, getDoorStatus } from '../gpio/controller.js';
-import { logAccess, isUserAllowed } from '../db/database.js';
-import { checkUserAccess } from '../discord/bot.js';
+import { unlockDoor, getDoorStatus } from '../controller.js';
+import { logAccess, isUserAllowed } from '../database.js';
+import { checkUserAccess } from '../bot.js';
 
 const router = express.Router();
 

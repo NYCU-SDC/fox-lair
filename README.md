@@ -1,8 +1,8 @@
 <div align=center>
 
-# EC029 Gate
+# Fox Lair
 
-EC029 門禁系統 / Door Access Control System
+EC029 IoT Control System
 
 </div>
 

@@ -1,4 +1,4 @@
-# EC029 Gate Deployment Guide
+# Deployment Guide
 
 ## Raspberry Pi 5 Setup
 
@@ -51,13 +51,13 @@ sudo nano /etc/systemd/system/door-manager.service
 Add content:
 ```ini
 [Unit]
-Description=EC029 Door Manager
+Description=Fox Lair Control System
 After=network.target
 
 [Service]
 Type=simple
 User=pi
-WorkingDirectory=/home/pi/door-manager
+WorkingDirectory=/home/pi/fox-lair
 Environment="NODE_ENV=production"
 ExecStart=/usr/bin/node server/index.js
 Restart=always
@@ -122,7 +122,7 @@ gpioset gpiochip0 17=0  # Turn off
 
 1. Go to https://discord.com/developers/applications
 2. Click "New Application"
-3. Name it "EC029 Gate"
+3. Name it "Fox Lair" and create
 
 ### 2. Setup OAuth2
 
