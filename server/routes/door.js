@@ -5,6 +5,30 @@ import { isUserAllowed, logAccess } from "../database.js";
 
 const router = express.Router();
 
+// Rate limiting: Track last unlock time per user
+const userLastUnlock = new Map();
+const RATE_LIMIT_MS = 0; // 30 seconds between unlocks per user
+
+/**
+ * Check if user can unlock (rate limit)
+ */
+function checkRateLimit(userId) {
+	const lastUnlock = userLastUnlock.get(userId);
+	if (!lastUnlock) return { allowed: true };
+	
+	const timeSince = Date.now() - lastUnlock;
+	if (timeSince < RATE_LIMIT_MS) {
+		const waitTime = Math.ceil((RATE_LIMIT_MS - timeSince) / 1000);
+		return {
+			allowed: false,
+			waitTime,
+			message: `Please wait ${waitTime} seconds before unlocking again`
+		};
+	}
+	
+	return { allowed: true };
+}
+
 // Middleware to check authentication
 function requireAuth(req, res, next) {
 	if (!req.session.user) {
@@ -42,21 +66,53 @@ async function requireAccess(req, res, next) {
 
 // Unlock door
 router.post("/unlock", requireAuth, requireAccess, async (req, res) => {
+	const userId = req.session.user.id;
+	const username = req.session.user.username;
+	const ipAddress = req.ip || req.connection.remoteAddress;
+	
 	try {
-		const result = await unlockDoor();
+		// Check rate limit
+		const rateLimit = checkRateLimit(userId);
+		if (!rateLimit.allowed) {
+			console.log(`[WEB] unlock rate-limited for user ${username} (${userId})`);
+			return res.status(429).json({
+				error: "Rate limit exceeded",
+				message: rateLimit.message,
+				waitTime: rateLimit.waitTime
+			});
+		}
 
-		// Log the access
-		logAccess(req.session.user.id, req.session.user.username, "web");
+		// Attempt to unlock
+		const result = await unlockDoor({ userId, source: "web" });
+		
+		if (!result.success) {
+			console.log(`[WEB] unlock rejected for user ${username}: ${result.message}`);
+			return res.status(409).json({
+				error: result.message,
+				timeRemaining: result.timeRemaining
+			});
+		}
+
+		// Update rate limit tracker
+		userLastUnlock.set(userId, Date.now());
+
+		// Log the access with IP
+		logAccess(userId, username, "web", ipAddress);
+		
+		console.log(`[WEB] door unlocked by ${username} (${userId}) from ${ipAddress}`);
 
 		res.json({
 			success: true,
-			message: "Door unlocked",
-			duration: result.duration || 8000,
-			simulated: result.simulated || false
+			message: "Door unlocked successfully",
+			duration: result.duration,
+			simulated: result.simulated
 		});
 	} catch (error) {
-		console.error("Error unlocking door:", error);
-		res.status(500).json({ error: "Failed to unlock door" });
+		console.error(`[WEB] error unlocking door for user ${username}:`, error);
+		res.status(500).json({
+			error: "Failed to unlock door",
+			message: "An internal error occurred. Please try again."
+		});
 	}
 });
 

@@ -4,6 +4,30 @@ import { getAllowedRoles, logAccess } from "./database.js";
 
 let bot;
 
+// Rate limiting: Track last unlock time per user
+const userLastUnlock = new Map();
+const RATE_LIMIT_MS = 30000; // 30 seconds between unlocks per user
+
+/**
+ * Check if user can unlock (rate limit)
+ */
+function checkRateLimit(userId) {
+	const lastUnlock = userLastUnlock.get(userId);
+	if (!lastUnlock) return { allowed: true };
+	
+	const timeSince = Date.now() - lastUnlock;
+	if (timeSince < RATE_LIMIT_MS) {
+		const waitTime = Math.ceil((RATE_LIMIT_MS - timeSince) / 1000);
+		return {
+			allowed: false,
+			waitTime,
+			message: `Please wait ${waitTime} seconds before unlocking again`
+		};
+	}
+	
+	return { allowed: true };
+}
+
 export async function initBot() {
 	const token = process.env.DISCORD_BOT_TOKEN;
 
@@ -147,6 +171,22 @@ async function handleButton(interaction) {
 		await interaction.deferReply({ ephemeral: true });
 
 		try {
+			// Check rate limit
+			const rateLimit = checkRateLimit(interaction.user.id);
+			if (!rateLimit.allowed) {
+				const rateLimitEmbed = new EmbedBuilder()
+					.setColor("#FEE75C")
+					.setTitle("⏱️ Rate Limit")
+					.setDescription("You're trying to unlock too frequently.")
+					.addFields({ name: "⏳ Wait Time", value: `${rateLimit.waitTime} seconds`, inline: true })
+					.setFooter({ text: "Please wait before trying again" })
+					.setTimestamp();
+
+				return await interaction.editReply({
+					embeds: [rateLimitEmbed]
+				});
+			}
+
 			// Check if user has access
 			const hasAccess = await checkUserAccess(interaction.user.id, interaction.guild.id);
 
@@ -163,8 +203,27 @@ async function handleButton(interaction) {
 				});
 			}
 
-			// Unlock the door
-			const result = await unlockDoor();
+			// Attempt to unlock the door
+			const result = await unlockDoor({
+				userId: interaction.user.id,
+				source: "discord"
+			});
+
+			if (!result.success) {
+				const busyEmbed = new EmbedBuilder()
+					.setColor("#FEE75C")
+					.setTitle("🔄 Door Busy")
+					.setDescription(result.message || "The door is currently being unlocked.")
+					.addFields({ name: "⏱️ Time Remaining", value: `${Math.ceil((result.timeRemaining || 0) / 1000)} seconds`, inline: true })
+					.setTimestamp();
+
+				return await interaction.editReply({
+					embeds: [busyEmbed]
+				});
+			}
+
+			// Update rate limit tracker
+			userLastUnlock.set(interaction.user.id, Date.now());
 
 			// Log the access
 			logAccess(interaction.user.id, interaction.user.username, "discord");
@@ -173,8 +232,16 @@ async function handleButton(interaction) {
 				.setColor("#57F287")
 				.setTitle("✅ Door Unlocked")
 				.setDescription("The door has been successfully unlocked!")
-				.addFields({ name: "⏱️ Auto-lock", value: `${(result.duration || 8000) / 1000} seconds`, inline: true }, { name: "👤 Unlocked by", value: interaction.user.username, inline: true })
-				.setTimestamp();
+				.addFields(
+					{ name: "⏱️ Auto-lock", value: `${result.duration / 1000} seconds`, inline: true },
+					{ name: "👤 Unlocked by", value: interaction.user.username, inline: true }
+				);
+
+			if (result.simulated) {
+				successEmbed.addFields({ name: "⚠️ Mode", value: "Simulation", inline: true });
+			}
+
+			successEmbed.setTimestamp();
 
 			await interaction.editReply({
 				embeds: [successEmbed]

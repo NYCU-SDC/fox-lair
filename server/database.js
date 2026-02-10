@@ -22,7 +22,8 @@ export function initDatabase() {
       user_id TEXT NOT NULL,
       username TEXT NOT NULL,
       timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-      method TEXT NOT NULL
+      method TEXT NOT NULL,
+      ip_address TEXT
     );
 
     CREATE TABLE IF NOT EXISTS allowed_roles (
@@ -42,6 +43,18 @@ export function initDatabase() {
     );
   `);
 
+	// Check if ip_address column exists in access_logs, if not add it (migration)
+	try {
+		const tableInfo = db.prepare("PRAGMA table_info(access_logs)").all();
+		const hasIpAddress = tableInfo.some(col => col.name === "ip_address");
+		if (!hasIpAddress) {
+			db.exec("ALTER TABLE access_logs ADD COLUMN ip_address TEXT");
+			console.log("Database migrated: added ip_address column to access_logs");
+		}
+	} catch (error) {
+		console.warn("Database migration check failed:", error);
+	}
+
 	console.log("Database initialized");
 }
 
@@ -50,9 +63,9 @@ export function getDb() {
 }
 
 // Access log functions
-export function logAccess(userId, username, method) {
-	const stmt = db.prepare("INSERT INTO access_logs (user_id, username, method) VALUES (?, ?, ?)");
-	return stmt.run(userId, username, method);
+export function logAccess(userId, username, method, ipAddress = null) {
+	const stmt = db.prepare("INSERT INTO access_logs (user_id, username, method, ip_address) VALUES (?, ?, ?, ?)");
+	return stmt.run(userId, username, method, ipAddress);
 }
 
 export function getAccessLogs(limit = 100) {
