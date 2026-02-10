@@ -1,78 +1,38 @@
 import { execFileSync } from "node:child_process";
 
 const RELAY_PIN = Number(process.env.RELAY_GPIO_PIN ?? 17);
-const UNLOCK_DURATION = 8000;
+const UNLOCK_DURATION_MS = 8000;
 
-let unlockTimer = null;
 let gpioAvailable = true;
-let currentValue = 0;
 
-function gpiodSet(value) {
+function pulseRelay(durationMs) {
 	try {
-		// 不要 daemonize，讓 Node process 持有 GPIO
-		execFileSync("gpioset", [
-			"gpiochip0",
-			`${RELAY_PIN}=${value}`
-		]);
-		currentValue = value;
+		execFileSync(
+			"gpioset",
+			[
+				"-c", "gpiochip0",
+				"--hold-period", `${durationMs}ms`,
+				`${RELAY_PIN}=1`,
+			],
+			{ stdio: "ignore" }
+		);
 	} catch (err) {
 		gpioAvailable = false;
-		console.warn("[GPIO] gpiod unavailable, fallback to simulation:", err.message);
-	}
-}
-
-export function initGPIO() {
-	try {
-		gpiodSet(0);
-		console.log(`[GPIO] initialized via gpiod (BCM ${RELAY_PIN})`);
-	} catch {
-		gpioAvailable = false;
+		console.warn(
+			"[GPIO] gpiod unavailable, fallback to simulation:",
+			err?.message ?? err
+		);
 	}
 }
 
 export function unlockDoor() {
-	return new Promise((resolve) => {
-		if (!gpioAvailable) {
-			console.log("[GPIO] simulate unlock");
-			resolve({ simulated: true });
-			return;
-		}
-
-		if (unlockTimer) clearTimeout(unlockTimer);
-
-		gpiodSet(1);
-		console.log("[GPIO] door unlocked");
-
-		unlockTimer = setTimeout(() => {
-			gpiodSet(0);
-			unlockTimer = null;
-			console.log("[GPIO] door locked (auto)");
-		}, UNLOCK_DURATION);
-
-		resolve({ success: true, duration: UNLOCK_DURATION });
-	});
-}
-
-export function lockDoor() {
 	if (!gpioAvailable) {
-		console.log("[GPIO] simulate lock");
-		return { simulated: true };
+		console.log("[GPIO] simulate unlock (8s)");
+		return { simulated: true, duration: UNLOCK_DURATION_MS };
 	}
 
-	if (unlockTimer) {
-		clearTimeout(unlockTimer);
-		unlockTimer = null;
-	}
+	pulseRelay(UNLOCK_DURATION_MS);
+	console.log("[GPIO] door unlocked for 8 seconds");
 
-	gpiodSet(0);
-	console.log("[GPIO] door locked (manual)");
-	return { success: true };
-}
-
-export function getDoorStatus() {
-	return {
-		available: gpioAvailable,
-		locked: currentValue === 0,
-		autoLockActive: unlockTimer !== null
-	};
+	return { success: true, duration: UNLOCK_DURATION_MS };
 }
