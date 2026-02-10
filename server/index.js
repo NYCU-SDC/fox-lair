@@ -1,6 +1,5 @@
 import express from 'express';
 import session from 'express-session';
-import { config } from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import authRouter from './routes/auth.js';
@@ -9,8 +8,6 @@ import adminRouter from './routes/admin.js';
 import { initDatabase } from './database.js';
 import { initBot } from './bot.js';
 import { initGPIO } from './controller.js';
-
-config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

@@ -20,7 +20,7 @@ export async function initBot() {
     ]
   });
 
-  bot.on('ready', () => {
+  bot.on('clientReady', () => {
     console.log(`Discord bot logged in as ${bot.user.tag}`);
   });
 
@@ -144,7 +144,7 @@ export async function checkUserAccess(userId, guildId = null) {
         member.roles.cache.has(allowedRole.role_id)
       );
     } catch (error) {
-      console.error('Error checking user access:', error);
+      console.error(`Error checking user access in guild ${guildId}:`, error.message);
       return false;
     }
   } else {
@@ -161,6 +161,7 @@ export async function checkUserAccess(userId, guildId = null) {
         if (hasRole) return true;
       } catch (error) {
         // User not in this guild, continue
+        console.log(`User ${userId} not found in guild ${guild.name} (${guild.id})`);
         continue;
       }
     }

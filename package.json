@@ -4,11 +4,10 @@
   "description": "Fox Lair Control System",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
-    "dev:server": "node --watch server/index.js",
+    "dev:server": "node --env-file=.env --watch server/index.js",
     "dev:client": "cd client && vite",
     "build": "cd client && vite build",
-    "start": "node server/index.js",
+    "start": "node --env-file=.env server/index.js",
     "format": "prettier --write ."
   },
   "keywords": [
@@ -25,7 +24,6 @@
     "axios": "^1.7.9",
     "better-sqlite3": "^11.8.1",
     "discord.js": "^14.17.3",
-    "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "express-session": "^1.18.1",
     "onoff": "^6.0.3",
@@ -35,7 +33,6 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
-    "concurrently": "^9.1.2",
     "prettier": "^3.8.1",
     "prettier-plugin-organize-imports": "^4.3.0",
     "prettier-plugin-packagejson": "^3.0.0",

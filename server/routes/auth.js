@@ -1,6 +1,5 @@
 import express from 'express';
 import axios from 'axios';
-import { addAllowedUser } from '../database.js';
 
 const router = express.Router();
 
