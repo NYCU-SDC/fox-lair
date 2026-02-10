@@ -20,8 +20,11 @@ export async function initBot() {
     ]
   });
 
-  bot.on('clientReady', () => {
+  bot.on('clientReady', async () => {
     console.log(`Discord bot logged in as ${bot.user.tag}`);
+    
+    // Update old door messages to new embed format
+    await updateOldDoorMessages();
   });
 
   bot.on('interactionCreate', async (interaction) => {
@@ -36,6 +39,74 @@ export async function initBot() {
 
   // Register slash commands
   await registerCommands();
+}
+
+async function updateOldDoorMessages() {
+  if (!bot) return;
+
+  console.log('Checking for old door messages to update...');
+
+  for (const guild of bot.guilds.cache.values()) {
+    try {
+      const channels = guild.channels.cache.filter(ch => 
+        ch.isTextBased() && ch.permissionsFor(bot.user).has(PermissionFlagsBits.ViewChannel)
+      );
+
+      for (const channel of channels.values()) {
+        try {
+          const messages = await channel.messages.fetch({ limit: 50 });
+          const doorMessages = messages.filter(m => 
+            m.author.id === bot.user.id && 
+            m.components.length > 0 &&
+            m.components[0].components.some(c => c.customId === 'unlock_door')
+          );
+
+          for (const msg of doorMessages.values()) {
+            // Check if already using embed format
+            if (msg.embeds.length > 0 && msg.embeds[0].title === '🔐 EC029 Door Access') {
+              console.log(`Door message in ${channel.name} already updated`);
+              continue;
+            }
+
+            // Update to new embed format
+            const embed = new EmbedBuilder()
+              .setColor('#5865F2')
+              .setTitle('🔐 EC029 Door Access')
+              .setDescription('Click the button below to unlock the door.')
+              .addFields(
+                { name: '⏱️ Duration', value: '8 seconds', inline: true },
+                { name: '🔒 Security', value: 'Role-based access', inline: true }
+              )
+              .setFooter({ text: 'Requires appropriate permissions' })
+              .setTimestamp();
+
+            const row = new ActionRowBuilder()
+              .addComponents(
+                new ButtonBuilder()
+                  .setCustomId('unlock_door')
+                  .setLabel('🚪 Unlock EC029 Door')
+                  .setStyle(ButtonStyle.Primary)
+              );
+
+            await msg.edit({
+              content: null,
+              embeds: [embed],
+              components: [row]
+            });
+
+            console.log(`Updated door message in ${channel.name} (${guild.name})`);
+          }
+        } catch (error) {
+          // Skip channels we can't access
+          continue;
+        }
+      }
+    } catch (error) {
+      console.error(`Error updating messages in guild ${guild.name}:`, error.message);
+    }
+  }
+
+  console.log('Finished updating old door messages');
 }
 
 export function getBot() {
