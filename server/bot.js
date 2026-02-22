@@ -4,14 +4,10 @@ import { getAllowedRoles, logAccess } from "./database.js";
 
 let bot;
 
-// Rate limiting: Track last unlock time per user
 const userLastUnlock = new Map();
-const RATE_LIMIT_MS = 30000; // 30 seconds between unlocks per user
+const RATE_LIMIT_MS = 10000;
 
-/**
- * Check if user can unlock (rate limit)
- */
-function checkRateLimit(userId) {
+const checkRateLimit = userId => {
 	const lastUnlock = userLastUnlock.get(userId);
 	if (!lastUnlock) return { allowed: true };
 
@@ -26,9 +22,9 @@ function checkRateLimit(userId) {
 	}
 
 	return { allowed: true };
-}
+};
 
-export async function initBot() {
+export const initBot = async () => {
 	const token = process.env.DISCORD_BOT_TOKEN;
 
 	if (!token) {
@@ -59,9 +55,9 @@ export async function initBot() {
 
 	// Register slash commands
 	await registerCommands();
-}
+};
 
-async function updateOldDoorMessages() {
+const updateOldDoorMessages = async () => {
 	if (!bot) return;
 
 	console.log("Checking for old door messages to update...");
@@ -112,13 +108,13 @@ async function updateOldDoorMessages() {
 	}
 
 	console.log("Finished updating old door messages");
-}
+};
 
-export function getBot() {
+export const getBot = () => {
 	return bot;
-}
+};
 
-async function registerCommands() {
+const registerCommands = async () => {
 	if (!bot) return;
 
 	const commands = [
@@ -136,9 +132,9 @@ async function registerCommands() {
 			console.error(`Failed to register commands for guild ${guild.name}:`, error);
 		}
 	}
-}
+};
 
-async function handleCommand(interaction) {
+const handleCommand = async interaction => {
 	if (interaction.commandName === "setup-door") {
 		const row = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("unlock_door").setLabel("🚪 Unlock Door").setStyle(ButtonStyle.Primary));
 
@@ -164,9 +160,9 @@ async function handleCommand(interaction) {
 			components: [row]
 		});
 	}
-}
+};
 
-async function handleButton(interaction) {
+const handleButton = async interaction => {
 	if (interaction.customId === "unlock_door") {
 		await interaction.deferReply({ ephemeral: true });
 
@@ -267,9 +263,9 @@ async function handleButton(interaction) {
 			});
 		}
 	}
-}
+};
 
-export async function checkUserAccess(userId, guildId = null) {
+export const checkUserAccess = async (userId, guildId = null) => {
 	if (!bot) return false;
 
 	const allowedRoles = getAllowedRoles();
@@ -306,6 +302,6 @@ export async function checkUserAccess(userId, guildId = null) {
 		}
 		return false;
 	}
-}
+};
 
 export default { initBot, getBot, checkUserAccess };

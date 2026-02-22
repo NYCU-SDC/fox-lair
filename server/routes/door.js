@@ -12,7 +12,7 @@ const RATE_LIMIT_MS = 0; // 30 seconds between unlocks per user
 /**
  * Check if user can unlock (rate limit)
  */
-function checkRateLimit(userId) {
+const checkRateLimit = userId => {
 	const lastUnlock = userLastUnlock.get(userId);
 	if (!lastUnlock) return { allowed: true };
 
@@ -27,18 +27,18 @@ function checkRateLimit(userId) {
 	}
 
 	return { allowed: true };
-}
+};
 
 // Middleware to check authentication
-function requireAuth(req, res, next) {
+const requireAuth = (req, res, next) => {
 	if (!req.session.user) {
 		return res.status(401).json({ error: "Not authenticated" });
 	}
 	next();
-}
+};
 
 // Middleware to check access permission
-async function requireAccess(req, res, next) {
+const requireAccess = async (req, res, next) => {
 	const userId = req.session.user.id;
 
 	// Admin always has access
@@ -62,7 +62,7 @@ async function requireAccess(req, res, next) {
 	}
 
 	res.status(403).json({ error: "Access denied" });
-}
+};
 
 // Unlock door
 router.post("/unlock", requireAuth, requireAccess, async (req, res) => {

@@ -6,7 +6,7 @@ let lastUnlockTime = 0;
 
 const COOLDOWN_MS = 0; // 如果你想要全域冷卻時間
 
-function spawnGpio(args) {
+const spawnGpio = args => {
 	return new Promise((resolve, reject) => {
 		const proc = spawn("gpioset", args);
 		let stderr = "";
@@ -18,9 +18,9 @@ function spawnGpio(args) {
 			else resolve();
 		});
 	});
-}
+};
 
-export async function resetDoor() {
+export const resetDoor = async () => {
 	console.log("[GPIO] Resetting door to closed state...");
 	try {
 		await spawnGpio(["-c", "gpiochip0", "-t0", "17=0"]);
@@ -29,9 +29,9 @@ export async function resetDoor() {
 	} catch (err) {
 		console.error("[GPIO] Reset failed:", err.message);
 	}
-}
+};
 
-export function unlockDoor({ userId, source }) {
+export const unlockDoor = ({ userId, source }) => {
 	// 防止同時重複觸發
 	if (isUnlocking) {
 		return Promise.resolve({
@@ -82,8 +82,8 @@ export function unlockDoor({ userId, source }) {
 				resolve({ success: false, message: "GPIO control failed" });
 			});
 	});
-}
+};
 
-export function getDoorStatus() {
+export const getDoorStatus = () => {
 	return { doorState, isUnlocking, lastUnlockTime };
-}
+};

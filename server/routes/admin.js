@@ -5,12 +5,12 @@ import { addAllowedRole, addAllowedUser, getAccessLogs, getAllowedRoles, getAllo
 const router = express.Router();
 
 // Middleware to check admin
-function requireAdmin(req, res, next) {
+const requireAdmin = (req, res, next) => {
 	if (!req.session.isAdmin) {
 		return res.status(403).json({ error: "Admin access required" });
 	}
 	next();
-}
+};
 
 // Get access logs
 router.get("/logs", requireAdmin, (req, res) => {
