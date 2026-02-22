@@ -214,7 +214,6 @@ async function handleButton(interaction) {
 					.setColor("#FEE75C")
 					.setTitle("🔄 Door Busy")
 					.setDescription(result.message || "The door is currently being unlocked.")
-					.addFields({ name: "⏱️ Time Remaining", value: `${Math.ceil((result.timeRemaining || 0) / 1000)} seconds`, inline: true })
 					.setTimestamp();
 
 				return await interaction.editReply({
@@ -228,21 +227,31 @@ async function handleButton(interaction) {
 			// Log the access
 			logAccess(interaction.user.id, interaction.user.username, "discord");
 
-			const successEmbed = new EmbedBuilder()
+			// 開門時立即回應
+			const openedEmbed = new EmbedBuilder()
 				.setColor("#57F287")
-				.setTitle("✅ Door Unlocked")
-				.setDescription("The door has been successfully unlocked!")
-				.addFields({ name: "⏱️ Auto-lock", value: `${result.duration / 1000} seconds`, inline: true }, { name: "👤 Unlocked by", value: interaction.user.username, inline: true });
+				.setTitle("🔓 門已開啟")
+				.setDescription("門已成功開啟！")
+				.addFields({ name: "👤 開門者", value: interaction.user.username, inline: true })
+				.setTimestamp();
 
-			if (result.simulated) {
-				successEmbed.addFields({ name: "⚠️ Mode", value: "Simulation", inline: true });
-			}
+			await interaction.editReply({ embeds: [openedEmbed] });
 
-			successEmbed.setTimestamp();
+			// 關門後編輯訊息
+			result.whenClosed
+				.then(async () => {
+					const closedEmbed = new EmbedBuilder()
+						.setColor("#5865F2")
+						.setTitle("🔒 門已關閉")
+						.setDescription("門剛才有開過，現在已關閉。")
+						.addFields({ name: "👤 開門者", value: interaction.user.username, inline: true })
+						.setTimestamp();
 
-			await interaction.editReply({
-				embeds: [successEmbed]
-			});
+					await interaction.editReply({ embeds: [closedEmbed] });
+				})
+				.catch(err => {
+					console.error("[Bot] Failed to edit reply after door closed:", err.message);
+				});
 		} catch (error) {
 			console.error("Error handling unlock button:", error);
 

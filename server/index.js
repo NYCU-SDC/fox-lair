@@ -4,6 +4,7 @@ import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { initBot } from "./bot.js";
 import { initDatabase } from "./database.js";
+import { resetDoor } from "./controller.js";
 import adminRouter from "./routes/admin.js";
 import authRouter from "./routes/auth.js";
 import doorRouter from "./routes/door.js";
@@ -29,6 +30,7 @@ app.use(
 );
 
 await initDatabase();
+await resetDoor();
 await initBot();
 
 app.use("/api/auth", authRouter);
