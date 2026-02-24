@@ -31,7 +31,11 @@ app.use(
 
 await initDatabase();
 await resetDoor();
-await initBot();
+try {
+	await initBot();
+} catch (err) {
+	console.warn("[WARN] Discord bot failed to start:", err?.message || err);
+}
 
 app.use("/api/auth", authRouter);
 app.use("/api/door", doorRouter);

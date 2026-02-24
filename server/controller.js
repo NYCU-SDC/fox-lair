@@ -20,6 +20,9 @@ const spawnGpio = args => {
 			if (code !== 0) reject(new Error(`gpioset failed: ${stderr.trim()}`));
 			else resolve();
 		});
+		proc.on("error", err => {
+			reject(err);
+		});
 	});
 };
 
