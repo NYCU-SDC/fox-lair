@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./UnlockSection.css";
 
 function UnlockSection() {
@@ -7,6 +7,71 @@ function UnlockSection() {
 	const [unlockDurationSeconds, setUnlockDurationSeconds] = useState(8);
 	const [message, setMessage] = useState("");
 	const [error, setError] = useState("");
+
+	// API token state
+	const [tokenMeta, setTokenMeta] = useState(null); // { hasToken, createdAt }
+	const [newToken, setNewToken] = useState(""); // plain token shown once after (re)issue
+	const [tokenLoading, setTokenLoading] = useState(false);
+	const [tokenError, setTokenError] = useState("");
+	const [copied, setCopied] = useState(false);
+
+	useEffect(() => {
+		fetchTokenStatus();
+	}, []);
+
+	const fetchTokenStatus = async () => {
+		try {
+			const res = await fetch("/api/auth/token", { credentials: "include" });
+			if (res.ok) setTokenMeta(await res.json());
+		} catch {}
+	};
+
+	const handleGenerateToken = async () => {
+		setTokenLoading(true);
+		setTokenError("");
+		setNewToken("");
+		setCopied(false);
+		try {
+			const res = await fetch("/api/auth/token", { method: "POST", credentials: "include" });
+			const data = await res.json();
+			if (res.ok) {
+				setNewToken(data.token);
+				fetchTokenStatus();
+			} else {
+				setTokenError(data.error || "Failed to generate token");
+			}
+		} catch {
+			setTokenError("Network error");
+		} finally {
+			setTokenLoading(false);
+		}
+	};
+
+	const handleRevokeToken = async () => {
+		if (!confirm("Revoke your API token? Any iOS Shortcuts using it will stop working.")) return;
+		setTokenLoading(true);
+		setTokenError("");
+		setNewToken("");
+		try {
+			const res = await fetch("/api/auth/token", { method: "DELETE", credentials: "include" });
+			if (res.ok) {
+				setTokenMeta({ hasToken: false, createdAt: null });
+			} else {
+				const data = await res.json();
+				setTokenError(data.error || "Failed to revoke token");
+			}
+		} catch {
+			setTokenError("Network error");
+		} finally {
+			setTokenLoading(false);
+		}
+	};
+
+	const handleCopy = () => {
+		navigator.clipboard.writeText(newToken);
+		setCopied(true);
+		setTimeout(() => setCopied(false), 2000);
+	};
 
 	const handleUnlock = async () => {
 		setUnlocking(true);
@@ -72,6 +137,49 @@ function UnlockSection() {
 
 				{message && <div className="success-message">{message}</div>}
 				{error && <div className="error-message">{error}</div>}
+			</div>
+
+			<div className="api-token-card card">
+				<h3>📱 API Token</h3>
+				<p className="api-token-description">
+					用 API token 搭配 iOS 捷徑來開門。Token 以雜湊儲存，只有產生當下會顯示一次。
+				</p>
+
+				{tokenMeta?.hasToken && (
+					<p className="token-meta">
+						目前有效 token，建立於 {new Date(tokenMeta.createdAt + "Z").toLocaleString()}
+					</p>
+				)}
+
+				{newToken && (
+					<div className="token-reveal">
+						<p className="token-warning">⚠️ 請立刻複製，離開後不再顯示</p>
+						<div className="token-box">
+							<code className="token-value">{newToken}</code>
+							<button className="btn btn-secondary btn-sm" onClick={handleCopy}>
+								{copied ? "✅ 已複製" : "複製"}
+							</button>
+						</div>
+						<p className="token-usage">
+							iOS 捷徑設定：<br />
+							POST <code>{window.location.origin}/api/door/unlock</code><br />
+							Header: <code>Authorization: Bearer &lt;token&gt;</code>
+						</p>
+					</div>
+				)}
+
+				{tokenError && <div className="error-message">{tokenError}</div>}
+
+				<div className="token-actions">
+					<button className="btn btn-primary" onClick={handleGenerateToken} disabled={tokenLoading}>
+						{tokenLoading ? "處理中..." : tokenMeta?.hasToken ? "🔄 重新發行" : "✨ 產生 Token"}
+					</button>
+					{tokenMeta?.hasToken && (
+						<button className="btn btn-danger" onClick={handleRevokeToken} disabled={tokenLoading}>
+							撤銷
+						</button>
+					)}
+				</div>
 			</div>
 
 			<div className="info-card card">

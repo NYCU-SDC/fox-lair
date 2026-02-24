@@ -41,6 +41,14 @@ export const initDatabase = () => {
       username TEXT NOT NULL,
       added_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS api_tokens (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL UNIQUE,
+      username TEXT NOT NULL,
+      token_hash TEXT NOT NULL UNIQUE,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
 	// Check if ip_address column exists in access_logs, if not add it (migration)
@@ -108,4 +116,27 @@ export const getAllowedUsers = () => {
 export const isUserAllowed = userId => {
 	const stmt = db.prepare("SELECT * FROM allowed_users WHERE user_id = ?");
 	return stmt.get(userId) !== undefined;
+};
+
+// API token functions
+export const upsertApiToken = (userId, username, tokenHash) => {
+	const stmt = db.prepare(
+		"INSERT INTO api_tokens (user_id, username, token_hash) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET username = excluded.username, token_hash = excluded.token_hash, created_at = CURRENT_TIMESTAMP"
+	);
+	return stmt.run(userId, username, tokenHash);
+};
+
+export const getUserByTokenHash = tokenHash => {
+	const stmt = db.prepare("SELECT user_id, username FROM api_tokens WHERE token_hash = ?");
+	return stmt.get(tokenHash);
+};
+
+export const getApiTokenMeta = userId => {
+	const stmt = db.prepare("SELECT user_id, username, created_at FROM api_tokens WHERE user_id = ?");
+	return stmt.get(userId);
+};
+
+export const deleteApiToken = userId => {
+	const stmt = db.prepare("DELETE FROM api_tokens WHERE user_id = ?");
+	return stmt.run(userId);
 };

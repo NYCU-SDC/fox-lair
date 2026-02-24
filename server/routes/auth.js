@@ -1,5 +1,7 @@
 import axios from "axios";
+import { createHash, randomBytes } from "crypto";
 import express from "express";
+import { deleteApiToken, getApiTokenMeta, upsertApiToken } from "../database.js";
 
 const router = express.Router();
 
@@ -103,6 +105,35 @@ router.get("/me", (req, res) => {
 		},
 		isAdmin: req.session.isAdmin || false
 	});
+});
+
+// Middleware: require session auth
+const requireAuth = (req, res, next) => {
+	if (!req.session.user) return res.status(401).json({ error: "Not authenticated" });
+	next();
+};
+
+// GET /api/auth/token - check if user has an API token
+router.get("/token", requireAuth, (req, res) => {
+	const meta = getApiTokenMeta(req.session.user.id);
+	res.json({ hasToken: !!meta, createdAt: meta?.created_at || null });
+});
+
+// POST /api/auth/token - generate or reissue API token (returned once, then only hash is stored)
+router.post("/token", requireAuth, (req, res) => {
+	const { id, username } = req.session.user;
+	const token = randomBytes(32).toString("hex");
+	const hash = createHash("sha256").update(token).digest("hex");
+	upsertApiToken(id, username, hash);
+	console.log(`[API] token issued for ${username} (${id})`);
+	res.json({ token });
+});
+
+// DELETE /api/auth/token - revoke API token
+router.delete("/token", requireAuth, (req, res) => {
+	deleteApiToken(req.session.user.id);
+	console.log(`[API] token revoked for ${req.session.user.username} (${req.session.user.id})`);
+	res.json({ success: true });
 });
 
 // Logout

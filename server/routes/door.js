@@ -1,7 +1,8 @@
 import express from "express";
+import { createHash } from "crypto";
 import { checkUserAccess } from "../bot.js";
 import { getDoorStatus, unlockDoor } from "../controller.js";
-import { isUserAllowed, logAccess } from "../database.js";
+import { getUserByTokenHash, isUserAllowed, logAccess } from "../database.js";
 
 const router = express.Router();
 
@@ -29,7 +30,38 @@ const checkRateLimit = userId => {
 	return { allowed: true };
 };
 
-// Middleware to check authentication
+// Middleware to check authentication (session or Bearer API token)
+const resolveUser = (req, res, next) => {
+	if (req.session.user) {
+		req.doorUser = {
+			id: req.session.user.id,
+			username: req.session.user.username,
+			isAdmin: !!req.session.isAdmin,
+			viaToken: false
+		};
+		return next();
+	}
+
+	const authHeader = req.headers.authorization;
+	if (authHeader?.startsWith("Bearer ")) {
+		const token = authHeader.slice(7);
+		const hash = createHash("sha256").update(token).digest("hex");
+		const record = getUserByTokenHash(hash);
+		if (record) {
+			req.doorUser = {
+				id: record.user_id,
+				username: record.username,
+				isAdmin: false,
+				viaToken: true
+			};
+			return next();
+		}
+	}
+
+	return res.status(401).json({ error: "Not authenticated" });
+};
+
+// Middleware to check authentication (session only)
 const requireAuth = (req, res, next) => {
 	if (!req.session.user) {
 		return res.status(401).json({ error: "Not authenticated" });
@@ -39,21 +71,21 @@ const requireAuth = (req, res, next) => {
 
 // Middleware to check access permission
 const requireAccess = async (req, res, next) => {
-	const userId = req.session.user.id;
+	const { id, isAdmin } = req.doorUser;
 
 	// Admin always has access
-	if (req.session.isAdmin) {
+	if (isAdmin) {
 		return next();
 	}
 
 	// Check if user is explicitly allowed
-	if (isUserAllowed(userId)) {
+	if (isUserAllowed(id)) {
 		return next();
 	}
 
 	// Check if user has allowed role in any guild
 	try {
-		const hasAccess = await checkUserAccess(userId);
+		const hasAccess = await checkUserAccess(id);
 		if (hasAccess) {
 			return next();
 		}
@@ -65,16 +97,15 @@ const requireAccess = async (req, res, next) => {
 };
 
 // Unlock door
-router.post("/unlock", requireAuth, requireAccess, async (req, res) => {
-	const userId = req.session.user.id;
-	const username = req.session.user.username;
+router.post("/unlock", resolveUser, requireAccess, async (req, res) => {
+	const { id: userId, username, viaToken } = req.doorUser;
 	const ipAddress = req.ip || req.connection.remoteAddress;
 
 	try {
 		// Check rate limit
 		const rateLimit = checkRateLimit(userId);
 		if (!rateLimit.allowed) {
-			console.log(`[WEB] unlock rate-limited for user ${username} (${userId})`);
+			console.log(`[${viaToken ? "API" : "WEB"}] unlock rate-limited for user ${username} (${userId})`);
 			return res.status(429).json({
 				error: "Rate limit exceeded",
 				message: rateLimit.message,
@@ -83,10 +114,10 @@ router.post("/unlock", requireAuth, requireAccess, async (req, res) => {
 		}
 
 		// Attempt to unlock
-		const result = await unlockDoor({ userId, source: "web" });
+		const result = await unlockDoor({ userId, source: viaToken ? "api" : "web" });
 
 		if (!result.success) {
-			console.log(`[WEB] unlock rejected for user ${username}: ${result.message}`);
+			console.log(`[${viaToken ? "API" : "WEB"}] unlock rejected for user ${username}: ${result.message}`);
 			return res.status(409).json({
 				error: result.message,
 				timeRemaining: result.timeRemaining
@@ -97,9 +128,9 @@ router.post("/unlock", requireAuth, requireAccess, async (req, res) => {
 		userLastUnlock.set(userId, Date.now());
 
 		// Log the access with IP
-		logAccess(userId, username, "web", ipAddress);
+		logAccess(userId, username, viaToken ? "api" : "web", ipAddress);
 
-		console.log(`[WEB] door unlocked by ${username} (${userId}) from ${ipAddress}`);
+		console.log(`[${viaToken ? "API" : "WEB"}] door unlocked by ${username} (${userId}) from ${ipAddress}`);
 
 		res.json({
 			success: true,
@@ -108,7 +139,7 @@ router.post("/unlock", requireAuth, requireAccess, async (req, res) => {
 			simulated: result.simulated
 		});
 	} catch (error) {
-		console.error(`[WEB] error unlocking door for user ${username}:`, error);
+		console.error(`[${viaToken ? "API" : "WEB"}] error unlocking door for user ${username}:`, error);
 		res.status(500).json({
 			error: "Failed to unlock door",
 			message: "An internal error occurred. Please try again."
