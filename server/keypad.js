@@ -89,8 +89,13 @@ const parseGpioValues = stdout => {
 		.trim()
 		.split(/\s+/)
 		.map(token => (token.includes("=") ? token.slice(token.lastIndexOf("=") + 1) : token))
-		.filter(value => value === "0" || value === "1")
-		.map(Number);
+		.map(value => value.replace(/^"|"$/g, "").toLowerCase())
+		.map(value => {
+			if (value === "1" || value === "active" || value === "hi" || value === "high") return 1;
+			if (value === "0" || value === "inactive" || value === "lo" || value === "low") return 0;
+			return null;
+		})
+		.filter(value => value !== null);
 };
 
 class KeypadScanner {
@@ -190,11 +195,22 @@ class KeypadScanner {
 
 	async readRows() {
 		const biasArgs = this.gpiodBias === "none" ? [] : ["-b", this.gpiodBias];
-		const stdout = await runCommand("gpioget", ["-c", this.chip, ...biasArgs, ...this.rowPins]);
+		let stdout;
+
+		try {
+			stdout = await runCommand("gpioget", ["-c", this.chip, ...biasArgs, "--numeric", ...this.rowPins]);
+		} catch (error) {
+			if (!error.message.includes("numeric") && !error.message.includes("unrecognized")) {
+				throw error;
+			}
+
+			stdout = await runCommand("gpioget", ["-c", this.chip, ...biasArgs, ...this.rowPins]);
+		}
+
 		const values = parseGpioValues(stdout);
 
 		if (values.length !== this.rowPins.length) {
-			throw new Error(`gpioget returned ${values.length} values for ${this.rowPins.length} rows`);
+			throw new Error(`gpioget returned ${values.length} values for ${this.rowPins.length} rows: ${stdout.trim() || "<empty>"}`);
 		}
 
 		return values;
