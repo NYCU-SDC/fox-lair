@@ -15,6 +15,7 @@ import {
 	removeAllowedUser,
 	revokePhysicalPassword
 } from "../database.js";
+import { clearKeypadScannerTestState, getKeypadScannerStatus } from "../keypad.js";
 
 const router = express.Router();
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -82,6 +83,17 @@ router.get("/physical-password-logs", requireBackendAuth, (req, res) => {
 	const limit = parseInt(req.query.limit) || 50;
 	const logs = getAuditLogs({ limit, targetType: "physical_password" }).map(parseAuditDetails);
 	res.json(logs);
+});
+
+// Get physical keypad test status
+router.get("/keypad-test", requireBackendAuth, (req, res) => {
+	res.json(getKeypadScannerStatus());
+});
+
+// Clear physical keypad test status
+router.post("/keypad-test/clear", requireBackendAuth, (req, res) => {
+	clearKeypadScannerTestState();
+	res.json({ success: true });
 });
 
 // Get physical keypad passwords

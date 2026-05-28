@@ -1,0 +1,160 @@
+.keypad-test {
+	display: flex;
+	flex-direction: column;
+	gap: 2rem;
+}
+
+.keypad-test h2 {
+	margin: 0 0 0.75rem 0;
+	color: var(--text);
+}
+
+.keypad-test-header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 1rem;
+	margin-bottom: 1.25rem;
+}
+
+.keypad-test-actions {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+}
+
+.digits-toggle {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	color: var(--subtext1);
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.digits-toggle input {
+	width: 1rem;
+	height: 1rem;
+	accent-color: var(--blue);
+}
+
+.keypad-status-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	gap: 1rem;
+}
+
+.keypad-status-item {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+	padding: 1rem;
+	background-color: var(--surface0);
+	border-radius: 8px;
+}
+
+.keypad-status-item span {
+	color: var(--subtext0);
+	font-size: 0.85rem;
+	font-weight: 600;
+	text-transform: uppercase;
+}
+
+.keypad-status-item strong {
+	color: var(--text);
+	font-size: 1rem;
+	word-break: break-word;
+}
+
+.keypad-status-item .status-ok {
+	color: var(--green);
+}
+
+.keypad-status-item .status-warn {
+	color: var(--yellow);
+}
+
+.keypad-warning {
+	margin-top: 1rem;
+	padding: 1rem;
+	background-color: rgba(249, 226, 175, 0.1);
+	border: 1px solid var(--yellow);
+	border-radius: 8px;
+	color: var(--yellow);
+}
+
+.keypad-warning code {
+	background-color: var(--surface0);
+	padding: 0.1rem 0.35rem;
+	border-radius: 4px;
+}
+
+.keypad-events {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+
+.keypad-event {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	padding: 1rem;
+	background-color: var(--surface0);
+	border-left: 4px solid var(--surface2);
+	border-radius: 8px;
+}
+
+.keypad-event.key,
+.keypad-event.submit {
+	border-left-color: var(--blue);
+}
+
+.keypad-event.clear,
+.keypad-event.test_cleared {
+	border-left-color: var(--yellow);
+}
+
+.keypad-event.access_granted {
+	border-left-color: var(--green);
+}
+
+.keypad-event.access_denied,
+.keypad-event.access_rejected,
+.keypad-event.scan_error {
+	border-left-color: var(--red);
+}
+
+.keypad-event-title {
+	color: var(--text);
+	font-weight: 700;
+}
+
+.keypad-event-detail {
+	margin-top: 0.25rem;
+	color: var(--subtext0);
+	font-size: 0.9rem;
+	word-break: break-word;
+}
+
+.keypad-event-time {
+	color: var(--subtext0);
+	font-family: "Fira Code", monospace;
+	font-size: 0.82rem;
+	white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+	.keypad-test-header,
+	.keypad-event {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+
+	.keypad-test-actions {
+		justify-content: flex-start;
+	}
+}
