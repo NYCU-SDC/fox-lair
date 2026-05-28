@@ -109,6 +109,31 @@ Relay to Door Lock:
  - Power Supply (-) → Door Lock Power (-)
 ```
 
+### Physical Keypad Wiring
+
+The physical keypad is a 7-wire matrix. The app scans columns 1-3 and rows 4-7.
+
+Default GPIO mapping:
+
+```
+Keypad wire 1 (147*) → GPIO 27 (physical pin 13)
+Keypad wire 2 (2580) → GPIO 22 (physical pin 15)
+Keypad wire 3 (369#) → GPIO 23 (physical pin 16)
+Keypad wire 4 (123)  → GPIO 24 (physical pin 18)
+Keypad wire 5 (456)  → GPIO 25 (physical pin 22)
+Keypad wire 6 (789)  → GPIO 5  (physical pin 29)
+Keypad wire 7 (*0#)  → GPIO 6  (physical pin 31)
+```
+
+Enable the scanner in `.env` after wiring:
+
+```bash
+KEYPAD_ENABLED=true
+KEYPAD_GPIO_PINS=27,22,23,24,25,5,6
+```
+
+On the keypad, enter the numeric PIN, press `#` to submit, and press `*` to clear.
+
 ### Testing GPIO
 
 ```bash

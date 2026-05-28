@@ -54,6 +54,21 @@
 	color: var(--mauve);
 }
 
+.method-badge.api {
+	background-color: rgba(137, 220, 235, 0.2);
+	color: var(--sky);
+}
+
+.method-badge.physical-password {
+	background-color: rgba(166, 227, 161, 0.2);
+	color: var(--green);
+}
+
+.method-badge.unknown {
+	background-color: rgba(108, 112, 134, 0.2);
+	color: var(--subtext0);
+}
+
 .empty-state {
 	text-align: center;
 	color: var(--overlay0);

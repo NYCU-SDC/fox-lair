@@ -6,6 +6,7 @@ let lastUnlockTime = 0;
 
 const COOLDOWN_MS = 0; // 如果你想要全域冷卻時間
 export const DOOR_UNLOCK_DURATION_MS = 8000;
+const RELAY_GPIO_PIN = process.env.RELAY_GPIO_PIN || "17";
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -29,7 +30,7 @@ const spawnGpio = args => {
 export const resetDoor = async () => {
 	console.log("[GPIO] Resetting door to closed state...");
 	try {
-		await spawnGpio(["-c", "gpiochip0", "-t0", "17=0"]);
+		await spawnGpio(["-c", "gpiochip0", "-t0", `${RELAY_GPIO_PIN}=0`]);
 		doorState = "closed";
 		console.log("[GPIO] Door reset complete.");
 	} catch (err) {
@@ -60,14 +61,14 @@ export const unlockDoor = ({ userId, source }) => {
 
 	return new Promise(resolve => {
 		// 先送出開門訊號
-		spawnGpio(["-c", "gpiochip0", "-t0", "17=1"])
+		spawnGpio(["-c", "gpiochip0", "-t0", `${RELAY_GPIO_PIN}=1`])
 			.then(() => {
 				doorState = "open";
 				console.log("[GPIO] Door opened");
 
 				// 延遲一段時間後再送出關門訊號，讓 Discord/Web 行為一致
 				const whenClosed = sleep(DOOR_UNLOCK_DURATION_MS)
-					.then(() => spawnGpio(["-c", "gpiochip0", "-t0", "17=0"]))
+					.then(() => spawnGpio(["-c", "gpiochip0", "-t0", `${RELAY_GPIO_PIN}=0`]))
 					.then(() => {
 						doorState = "closed";
 						isUnlocking = false;

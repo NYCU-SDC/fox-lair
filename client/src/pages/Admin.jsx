@@ -1,6 +1,7 @@
 import { useState } from "react";
 import AccessControl from "../components/AccessControl";
 import AccessLogs from "../components/AccessLogs";
+import PhysicalPasswords from "../components/PhysicalPasswords";
 import UnlockSection from "../components/UnlockSection";
 import "./Admin.css";
 
@@ -30,6 +31,10 @@ function Admin({ user, isAdmin, onLogout }) {
 						<span className="nav-icon">🔓</span>
 						Unlock Door
 					</button>
+					<button className={`nav-item ${activeTab === "physical-passwords" ? "active" : ""}`} onClick={() => setActiveTab("physical-passwords")}>
+						<span className="nav-icon">🔢</span>
+						Physical PINs
+					</button>
 
 					{isAdmin && (
 						<>
@@ -47,6 +52,7 @@ function Admin({ user, isAdmin, onLogout }) {
 
 				<main className="admin-main">
 					{activeTab === "unlock" && <UnlockSection />}
+					{activeTab === "physical-passwords" && <PhysicalPasswords />}
 					{activeTab === "access" && isAdmin && <AccessControl />}
 					{activeTab === "logs" && isAdmin && <AccessLogs />}
 				</main>

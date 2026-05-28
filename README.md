@@ -11,6 +11,7 @@ EC029 IoT Control System
 - 🔐 **Dual Authentication / 雙重認證**: Login with Discord OAuth or admin password
 - 🚪 **Door Control / 門禁控制**: Unlock door with automatic 8-second lock timer
 - 👥 **Role-Based Access / 角色權限**: Discord role-based access control
+- 🔢 **Physical PINs / 實體密碼**: Temporary keypad PINs with start/end time windows
 - 📋 **Access Logging / 存取記錄**: Complete audit trail of door access
 - 💬 **Discord Bot / Discord 機器人**: Interactive buttons for door access via Discord
 - 🎨 **Beautiful UI / 美觀介面**: Catppuccin Mocha color palette
@@ -23,6 +24,7 @@ EC029 IoT Control System
 - Raspberry Pi 5
 - Door Lock (power-controlled) / 電控門鎖
 - Relay Module / 繼電器模組
+- 7-pin Matrix Keypad / 7 pin 矩陣鍵盤
 - Power Supply / 電源供應器
 
 ### Software Stack / 軟體架構
@@ -30,7 +32,7 @@ EC029 IoT Control System
 - **Backend**: Node.js, Express, Discord.js
 - **Frontend**: React, Vite
 - **Database**: SQLite
-- **GPIO**: onoff library for Raspberry Pi
+- **GPIO**: Linux gpiod tools on Raspberry Pi
 
 ## Quick Start / 快速開始
 
@@ -73,6 +75,8 @@ Key variables / 主要變數:
 - `DISCORD_BOT_TOKEN` - Discord Bot Token
 - `ADMIN_PASSWORD` - Admin password for web login
 - `RELAY_GPIO_PIN` - GPIO pin number (default: 17)
+- `KEYPAD_ENABLED` - Enable physical keypad scanner on Raspberry Pi
+- `KEYPAD_GPIO_PINS` - GPIO mapping for keypad wires 1..7 (default: `27,22,23,24,25,5,6`)
 
 ## Usage / 使用方式
 
@@ -83,6 +87,11 @@ Key variables / 主要變數:
 3. **Admin Panel / 管理面板** (Admin only):
    - Add Discord roles for access control
    - View access logs
+4. **Physical PINs / 實體密碼**:
+   - Add temporary numeric PINs for the physical keypad
+   - Default validity is 24 hours
+   - Set explicit start and end date/time windows
+   - Creation, revocation, accepted access, and rejected access are audit logged
 
 ### Discord Bot / Discord 機器人
 

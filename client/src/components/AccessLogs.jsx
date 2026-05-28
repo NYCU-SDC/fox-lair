@@ -40,6 +40,21 @@ function AccessLogs() {
 		});
 	};
 
+	const getMethodMeta = method => {
+		switch (method) {
+			case "web":
+				return { label: "🌐 Web", className: "web" };
+			case "discord":
+				return { label: "💬 Discord", className: "discord" };
+			case "api":
+				return { label: "📱 API", className: "api" };
+			case "physical_password":
+				return { label: "🔢 PIN", className: "physical-password" };
+			default:
+				return { label: method, className: "unknown" };
+		}
+	};
+
 	if (loading) {
 		return (
 			<div className="loading-container">
@@ -72,16 +87,19 @@ function AccessLogs() {
 								</tr>
 							</thead>
 							<tbody>
-								{logs.map(log => (
-									<tr key={log.id}>
-										<td className="log-time">{formatDate(log.timestamp)}</td>
-										<td className="log-username">{log.username}</td>
-										<td>
-											<span className={`method-badge ${log.method}`}>{log.method === "web" ? "🌐 Web" : "💬 Discord"}</span>
-										</td>
-										<td className="log-userid">{log.user_id}</td>
-									</tr>
-								))}
+								{logs.map(log => {
+									const methodMeta = getMethodMeta(log.method);
+									return (
+										<tr key={log.id}>
+											<td className="log-time">{formatDate(log.timestamp)}</td>
+											<td className="log-username">{log.username}</td>
+											<td>
+												<span className={`method-badge ${methodMeta.className}`}>{methodMeta.label}</span>
+											</td>
+											<td className="log-userid">{log.user_id}</td>
+										</tr>
+									);
+								})}
 							</tbody>
 						</table>
 					</div>

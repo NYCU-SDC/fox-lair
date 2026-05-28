@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import { initBot } from "./bot.js";
 import { resetDoor } from "./controller.js";
 import { initDatabase } from "./database.js";
+import { initKeypadScanner } from "./keypad.js";
 import adminRouter from "./routes/admin.js";
 import authRouter from "./routes/auth.js";
 import doorRouter from "./routes/door.js";
@@ -31,6 +32,7 @@ app.use(
 
 await initDatabase();
 await resetDoor();
+initKeypadScanner();
 try {
 	await initBot();
 } catch (err) {
