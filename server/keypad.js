@@ -4,6 +4,7 @@ import { findValidPhysicalPassword, logAccess, logAudit } from "./database.js";
 
 const DEFAULT_KEYPAD_PINS = ["27", "22", "23", "24", "25", "5", "6"];
 const MAX_RECENT_EVENTS = 80;
+const DEFAULT_IDLE_RESET_MS = 10000;
 const KEY_MATRIX = [
 	["1", "2", "3"],
 	["4", "5", "6"],
@@ -158,10 +159,12 @@ class KeypadScanner {
 		this.rowPins = pins.slice(3);
 		this.pollMs = Math.max(parseInt(process.env.KEYPAD_POLL_MS) || 120, 50);
 		this.settleMs = Math.max(parseInt(process.env.KEYPAD_SETTLE_MS) || 30, 1);
+		this.idleResetMs = Math.max(parseInt(process.env.KEYPAD_IDLE_RESET_MS) || DEFAULT_IDLE_RESET_MS, 1000);
 		this.maxLength = Math.max(parseInt(process.env.KEYPAD_MAX_LENGTH) || 12, 4);
 		this.minLength = Math.max(parseInt(process.env.KEYPAD_MIN_LENGTH) || 4, 1);
 		this.gpiodBias = process.env.KEYPAD_GPIOD_BIAS || "pull-down";
 		this.buffer = "";
+		this.idleResetTimer = null;
 		this.interval = null;
 		this.scanInProgress = false;
 		this.keyIsDown = false;
@@ -186,6 +189,7 @@ class KeypadScanner {
 		if (!this.interval) return;
 		clearInterval(this.interval);
 		this.interval = null;
+		this.clearIdleResetTimer();
 		recordEvent({
 			type: "scanner_stopped",
 			message: "Scanner stopped"
@@ -272,8 +276,37 @@ class KeypadScanner {
 		return values;
 	}
 
+	clearIdleResetTimer() {
+		if (!this.idleResetTimer) return;
+		clearTimeout(this.idleResetTimer);
+		this.idleResetTimer = null;
+	}
+
+	scheduleIdleReset() {
+		this.clearIdleResetTimer();
+
+		if (!this.buffer) return;
+
+		this.idleResetTimer = setTimeout(() => {
+			if (!this.buffer) return;
+
+			const length = this.buffer.length;
+			this.buffer = "";
+			this.idleResetTimer = null;
+			console.log("[KEYPAD] PIN entry reset after inactivity");
+			recordEvent({
+				type: "idle_reset",
+				reason: "timeout",
+				length,
+				bufferLength: 0,
+				message: "PIN entry reset after inactivity"
+			});
+		}, this.idleResetMs);
+	}
+
 	async handleKey(key) {
 		if (key === "*") {
+			this.clearIdleResetTimer();
 			this.buffer = "";
 			console.log("[KEYPAD] PIN entry cleared");
 			recordEvent({
@@ -287,6 +320,7 @@ class KeypadScanner {
 
 		if (key === "#") {
 			const password = this.buffer;
+			this.clearIdleResetTimer();
 			this.buffer = "";
 			recordEvent({
 				type: "submit",
@@ -315,6 +349,7 @@ class KeypadScanner {
 
 		if (this.buffer.length < this.maxLength) {
 			this.buffer += key;
+			this.scheduleIdleReset();
 			recordEvent({
 				type: "key",
 				key,
@@ -418,6 +453,7 @@ class KeypadScanner {
 			rowPins: this.rowPins,
 			pollMs: this.pollMs,
 			settleMs: this.settleMs,
+			idleResetMs: this.idleResetMs,
 			minLength: this.minLength,
 			maxLength: this.maxLength,
 			bufferLength: this.buffer.length,
@@ -427,6 +463,7 @@ class KeypadScanner {
 	}
 
 	clearTestState() {
+		this.clearIdleResetTimer();
 		this.buffer = "";
 		recentEvents = [];
 		recordEvent({
@@ -466,6 +503,7 @@ export const getKeypadScannerStatus = () => {
 		rowPins: pins.slice(3),
 		pollMs: Math.max(parseInt(process.env.KEYPAD_POLL_MS) || 120, 50),
 		settleMs: Math.max(parseInt(process.env.KEYPAD_SETTLE_MS) || 30, 1),
+		idleResetMs: Math.max(parseInt(process.env.KEYPAD_IDLE_RESET_MS) || DEFAULT_IDLE_RESET_MS, 1000),
 		minLength: Math.max(parseInt(process.env.KEYPAD_MIN_LENGTH) || 4, 1),
 		maxLength: Math.max(parseInt(process.env.KEYPAD_MAX_LENGTH) || 12, 4),
 		bufferLength: 0,

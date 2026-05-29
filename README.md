@@ -78,6 +78,7 @@ Key variables / 主要變數:
 - `KEYPAD_ENABLED` - Enable physical keypad scanner on Raspberry Pi
 - `KEYPAD_GPIO_PINS` - GPIO mapping for keypad wires 1..7 (default: `27,22,23,24,25,5,6`)
 - `KEYPAD_SETTLE_MS` - Delay after driving each keypad column before reading rows (default: `30`)
+- `KEYPAD_IDLE_RESET_MS` - Clear an unfinished keypad entry after inactivity (default: `10000`)
 
 ## Usage / 使用方式
 

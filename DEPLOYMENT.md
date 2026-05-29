@@ -131,6 +131,7 @@ Enable the scanner in `.env` after wiring:
 KEYPAD_ENABLED=true
 KEYPAD_GPIO_PINS=27,22,23,24,25,5,6
 KEYPAD_SETTLE_MS=30
+KEYPAD_IDLE_RESET_MS=10000
 ```
 
 On the keypad, enter the numeric PIN, press `#` to submit, and press `*` to clear.

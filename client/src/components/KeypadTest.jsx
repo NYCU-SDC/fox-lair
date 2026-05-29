@@ -23,6 +23,8 @@ const getEventLabel = event => {
 			return "Cleared";
 		case "ignored":
 			return "Ignored";
+		case "idle_reset":
+			return "Auto reset";
 		case "access_granted":
 			return "Access granted";
 		case "access_denied":
@@ -52,6 +54,10 @@ const getEventDetail = (event, showDigits) => {
 
 	if (event.type === "key") {
 		return `Buffer length: ${event.bufferLength}`;
+	}
+
+	if (event.type === "idle_reset") {
+		return `${event.length || 0} buffered digits cleared after inactivity`;
 	}
 
 	if (event.label) {

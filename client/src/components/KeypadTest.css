@@ -114,6 +114,7 @@
 }
 
 .keypad-event.clear,
+.keypad-event.idle_reset,
 .keypad-event.test_cleared {
 	border-left-color: var(--yellow);
 }
