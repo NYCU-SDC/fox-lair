@@ -177,6 +177,22 @@ function PhysicalPasswords() {
 				<h2>Physical PINs</h2>
 				<p className="section-description">Create temporary numeric PINs for the 7-pin keypad connected to the Raspberry Pi.</p>
 
+				<div className="keypad-entry-guide" aria-label="Physical keypad entry instructions">
+					<div className="keypad-entry-step">
+						<span className="keypad-entry-key">0-9</span>
+						<span>Enter the numeric PIN on the physical keypad.</span>
+					</div>
+					<div className="keypad-entry-step">
+						<span className="keypad-entry-key">#</span>
+						<span>Submit the PIN.</span>
+					</div>
+					<div className="keypad-entry-step">
+						<span className="keypad-entry-key">*</span>
+						<span>Clear the current entry.</span>
+					</div>
+					<div className="keypad-entry-note">Unsubmitted entries clear automatically after 10 seconds. Incorrect PIN attempts send a Discord alert.</div>
+				</div>
+
 				<form className="pin-form" onSubmit={handleSubmit}>
 					<div className="form-row">
 						<div className="form-group">
