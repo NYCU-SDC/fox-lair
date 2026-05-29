@@ -3,10 +3,12 @@ import { DOOR_UNLOCK_DURATION_MS, unlockDoor } from "./controller.js";
 import { getAllowedRoles, logAccess } from "./database.js";
 
 let bot;
+let missingKeypadAlertChannelWarned = false;
 
 const userLastUnlock = new Map();
 const RATE_LIMIT_MS = 10000;
 const UNLOCK_DURATION_SECONDS = DOOR_UNLOCK_DURATION_MS / 1000;
+const KEYPAD_ALERT_CHANNEL_ID = process.env.DISCORD_KEYPAD_ALERT_CHANNEL_ID || process.env.DISCORD_ALERT_CHANNEL_ID;
 
 const checkRateLimit = userId => {
 	const lastUnlock = userLastUnlock.get(userId);
@@ -113,6 +115,41 @@ const updateOldDoorMessages = async () => {
 
 export const getBot = () => {
 	return bot;
+};
+
+export const sendPhysicalKeypadAlert = async ({ attemptedLength }) => {
+	if (!bot) return false;
+
+	if (!KEYPAD_ALERT_CHANNEL_ID) {
+		if (!missingKeypadAlertChannelWarned) {
+			console.warn("[Bot] DISCORD_KEYPAD_ALERT_CHANNEL_ID is not set; physical keypad alerts will not be sent");
+			missingKeypadAlertChannelWarned = true;
+		}
+
+		return false;
+	}
+
+	try {
+		const channel = await bot.channels.fetch(KEYPAD_ALERT_CHANNEL_ID);
+
+		if (!channel?.isTextBased()) {
+			console.warn(`[Bot] Keypad alert channel ${KEYPAD_ALERT_CHANNEL_ID} is not text-based`);
+			return false;
+		}
+
+		const alertEmbed = new EmbedBuilder()
+			.setColor("#ED4245")
+			.setTitle("Physical Keypad Alert")
+			.setDescription("An incorrect physical keypad PIN was submitted.")
+			.addFields({ name: "Attempt Length", value: `${attemptedLength} digits`, inline: true })
+			.setTimestamp();
+
+		await channel.send({ embeds: [alertEmbed] });
+		return true;
+	} catch (error) {
+		console.error("[Bot] Failed to send physical keypad alert:", error.message);
+		return false;
+	}
 };
 
 const registerCommands = async () => {
@@ -305,4 +342,4 @@ export const checkUserAccess = async (userId, guildId = null) => {
 	}
 };
 
-export default { initBot, getBot, checkUserAccess };
+export default { initBot, getBot, checkUserAccess, sendPhysicalKeypadAlert };

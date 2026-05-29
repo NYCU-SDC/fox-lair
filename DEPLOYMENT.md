@@ -300,6 +300,9 @@ lsof | grep gpio
 # Check token
 grep DISCORD_BOT_TOKEN ~/door-manager/.env
 
+# Check keypad alert channel
+grep DISCORD_KEYPAD_ALERT_CHANNEL_ID ~/door-manager/.env
+
 # Check bot status
 # View logs for Discord-related errors
 sudo journalctl -u door-manager | grep -i discord

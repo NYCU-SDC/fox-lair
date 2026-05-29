@@ -73,6 +73,7 @@ Key variables / 主要變數:
 - `DISCORD_CLIENT_ID` - Discord OAuth Client ID
 - `DISCORD_CLIENT_SECRET` - Discord OAuth Secret
 - `DISCORD_BOT_TOKEN` - Discord Bot Token
+- `DISCORD_KEYPAD_ALERT_CHANNEL_ID` - Discord channel for incorrect physical keypad PIN alerts
 - `ADMIN_PASSWORD` - Admin password for web login
 - `RELAY_GPIO_PIN` - GPIO pin number (default: 17)
 - `KEYPAD_ENABLED` - Enable physical keypad scanner on Raspberry Pi

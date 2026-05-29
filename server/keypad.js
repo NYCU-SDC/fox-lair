@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { sendPhysicalKeypadAlert } from "./bot.js";
 import { unlockDoor } from "./controller.js";
 import { findValidPhysicalPassword, logAccess, logAudit } from "./database.js";
 
@@ -364,8 +365,12 @@ class KeypadScanner {
 
 		if (!passwordRecord) {
 			console.log("[KEYPAD] PIN rejected");
+			const alertSent = await sendPhysicalKeypadAlert({
+				attemptedLength: password.length
+			});
 			recordEvent({
 				type: "access_denied",
+				alertSent,
 				message: "No active PIN matched"
 			});
 			logAudit({
@@ -373,7 +378,7 @@ class KeypadScanner {
 				actorUsername: "Physical Keypad",
 				action: "physical_password.access_denied",
 				targetType: "physical_password",
-				details: { reason: "no_active_match" }
+				details: { reason: "no_active_match", alertSent }
 			});
 			return;
 		}
