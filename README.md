@@ -77,6 +77,7 @@ Key variables / 主要變數:
 - `RELAY_GPIO_PIN` - GPIO pin number (default: 17)
 - `KEYPAD_ENABLED` - Enable physical keypad scanner on Raspberry Pi
 - `KEYPAD_GPIO_PINS` - GPIO mapping for keypad wires 1..7 (default: `27,22,23,24,25,5,6`)
+- `KEYPAD_SETTLE_MS` - Delay after driving each keypad column before reading rows (default: `30`)
 
 ## Usage / 使用方式
 

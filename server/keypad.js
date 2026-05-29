@@ -84,6 +84,57 @@ const runCommand = (command, args, timeoutMs = 1000) => {
 	});
 };
 
+const holdCommand = (command, args) => {
+	const proc = spawn(command, args);
+	let stderr = "";
+	let settled = false;
+	let exitError = null;
+	let stopping = false;
+	let closeResolve;
+
+	const closed = new Promise(resolve => {
+		closeResolve = resolve;
+	});
+
+	const settle = error => {
+		if (settled) return;
+		settled = true;
+		exitError = error;
+		closeResolve();
+	};
+
+	proc.stderr.on("data", data => {
+		stderr += data.toString();
+	});
+
+	proc.on("close", (code, signal) => {
+		if (stopping && (signal === "SIGTERM" || code === 0)) {
+			settle(null);
+			return;
+		}
+
+		settle(new Error(`${command} exited before holding GPIO lines: ${stderr.trim() || `exit ${code}`}`));
+	});
+
+	proc.on("error", error => {
+		settle(error);
+	});
+
+	return {
+		async throwIfExited() {
+			if (settled && exitError) throw exitError;
+		},
+		async stop() {
+			if (!settled) {
+				stopping = true;
+				proc.kill("SIGTERM");
+			}
+
+			await closed;
+		}
+	};
+};
+
 const parseGpioValues = stdout => {
 	return stdout
 		.trim()
@@ -106,7 +157,7 @@ class KeypadScanner {
 		this.columnPins = pins.slice(0, 3);
 		this.rowPins = pins.slice(3);
 		this.pollMs = Math.max(parseInt(process.env.KEYPAD_POLL_MS) || 120, 50);
-		this.settleMs = Math.max(parseInt(process.env.KEYPAD_SETTLE_MS) || 8, 1);
+		this.settleMs = Math.max(parseInt(process.env.KEYPAD_SETTLE_MS) || 30, 1);
 		this.maxLength = Math.max(parseInt(process.env.KEYPAD_MAX_LENGTH) || 12, 4);
 		this.minLength = Math.max(parseInt(process.env.KEYPAD_MIN_LENGTH) || 4, 1);
 		this.gpiodBias = process.env.KEYPAD_GPIOD_BIAS || "pull-down";
@@ -135,7 +186,6 @@ class KeypadScanner {
 		if (!this.interval) return;
 		clearInterval(this.interval);
 		this.interval = null;
-		this.setColumns(null).catch(() => {});
 		recordEvent({
 			type: "scanner_stopped",
 			message: "Scanner stopped"
@@ -169,10 +219,8 @@ class KeypadScanner {
 	async scanOnce() {
 		const keys = [];
 
-		try {
-			for (let columnIndex = 0; columnIndex < this.columnPins.length; columnIndex += 1) {
-				await this.setColumns(columnIndex);
-				await sleep(this.settleMs);
+		for (let columnIndex = 0; columnIndex < this.columnPins.length; columnIndex += 1) {
+			await this.withColumn(columnIndex, async () => {
 				const rowValues = await this.readRows();
 
 				rowValues.forEach((value, rowIndex) => {
@@ -180,17 +228,25 @@ class KeypadScanner {
 						keys.push(KEY_MATRIX[rowIndex][columnIndex]);
 					}
 				});
-			}
-		} finally {
-			await this.setColumns(null).catch(() => {});
+			});
 		}
 
 		return keys;
 	}
 
-	async setColumns(activeColumnIndex) {
+	async withColumn(activeColumnIndex, callback) {
 		const assignments = this.columnPins.map((pin, index) => `${pin}=${index === activeColumnIndex ? 1 : 0}`);
-		await runCommand("gpioset", ["-c", this.chip, "-t0", ...assignments]);
+		const hold = holdCommand("gpioset", ["-c", this.chip, ...assignments]);
+
+		try {
+			await sleep(this.settleMs);
+			await hold.throwIfExited();
+			const result = await callback();
+			await hold.throwIfExited();
+			return result;
+		} finally {
+			await hold.stop();
+		}
 	}
 
 	async readRows() {
@@ -409,7 +465,7 @@ export const getKeypadScannerStatus = () => {
 		columnPins: pins.slice(0, 3),
 		rowPins: pins.slice(3),
 		pollMs: Math.max(parseInt(process.env.KEYPAD_POLL_MS) || 120, 50),
-		settleMs: Math.max(parseInt(process.env.KEYPAD_SETTLE_MS) || 8, 1),
+		settleMs: Math.max(parseInt(process.env.KEYPAD_SETTLE_MS) || 30, 1),
 		minLength: Math.max(parseInt(process.env.KEYPAD_MIN_LENGTH) || 4, 1),
 		maxLength: Math.max(parseInt(process.env.KEYPAD_MAX_LENGTH) || 12, 4),
 		bufferLength: 0,
